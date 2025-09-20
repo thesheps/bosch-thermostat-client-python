@@ -90,6 +90,14 @@ class EasycontrolGateway(BaseGateway):
     def get_device_model(self, _db):
         """Find device model."""
         product_id = self._data[GATEWAY].get(PRODUCT_ID)
+
+        # Fallback if product_id is missing or decryption failed
+        if not product_id or product_id in ("None", "null"):
+            _LOGGER.warning(
+                "Product ID is missing or invalid (%s). Falling back to EASYCONTROL.", product_id
+            )
+            return "EasyControl (fallback)"
+
         model_scheme = _db[MODELS]
         model = None
         for bus in self._data[GATEWAY].get(SYSTEM_BUS, []):
@@ -100,6 +108,8 @@ class EasycontrolGateway(BaseGateway):
             model = model_scheme.get(product_id)
         if not model:
             _LOGGER.error(f"Couldn't find device model. Got product ID: {product_id}")
+            # Return fallback instead of None so HA still registers
+            return f"EasyControl ({product_id})"
         return model
 
     @property
